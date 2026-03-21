@@ -1,53 +1,56 @@
 # BizzBuzz
 
-BizzBuzz is a full-stack e-commerce web application with user authentication, product management, cart and checkout flow, reviews, and complaint handling.
+A full-stack e-commerce platform with authentication, product management, cart & checkout, reviews, and complaint handling.
+
+---
 
 ## Tech Stack
 
-- Frontend: React, Vite, React Router, Tailwind CSS, Axios
-- Backend: Node.js, Express
-- Database: MySQL (`mysql2`)
+| Layer | Technologies |
+|-------|-------------|
+| **Frontend** | React, Vite, React Router, Tailwind CSS, Axios |
+| **Backend** | Node.js, Express |
+| **Database** | MySQL 8+ (`mysql2`) |
 
-## Project Structure
+---
 
-- `backend/` - Express API, controllers, routes, SQL schema
-- `frontend/BizzBuzz/` - React client app
+## Getting Started
 
-## Prerequisites
-
+### Prerequisites
 - Node.js 18+
 - MySQL 8+
 
-## Setup
-
-1. Create the database schema:
-	- Run `backend/db.sql`
-2. Configure backend database connection in `backend/db.js`:
-	- `host`, `user`, `password`, `database`
-
-## Run Locally
-
-### Backend
-
+### 1. Database
 ```bash
-cd backend
-npm install
-npm run dev
+# Run the schema file against your MySQL instance
+mysql -u <user> -p < backend/db.sql
 ```
 
-Backend default URL: `http://localhost:3080`
-
-### Frontend
-
-```bash
-cd frontend/BizzBuzz
-npm install
-npm run dev
+### 2. Backend Configuration
+Update `backend/db.js` with your database credentials:
+```js
+host, user, password, database
 ```
 
-Frontend runs on Vite default URL (usually `http://localhost:5173`).
+---
 
-## Available Scripts
+## Running Locally
 
-- Backend: `npm start`, `npm run dev`
-- Frontend: `npm run dev`, `npm run build`, `npm run preview`, `npm run lint`
+```bash
+# Backend  →  http://localhost:3080
+cd backend && npm install && npm run dev
+
+# Frontend  →  http://localhost:5173
+cd frontend/BizzBuzz && npm install && npm run dev
+```
+
+---
+
+## Project Structure
+
+```
+bizzbuzz/
+├── backend/        # Express API — controllers, routes, SQL schema
+└── frontend/
+    └── BizzBuzz/   # React client application
+```
