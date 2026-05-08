@@ -44,7 +44,7 @@ function App() {
           element: <Admin />,
         },
         {
-          path: "/compalint",
+          path: "/complaint",
           element: <Complaint />,
         },
         {
@@ -66,7 +66,7 @@ function App() {
         },
       ],
     },
-  ]);
+  ], { basename: '/BizzBuzz' });
   return <RouterProvider router={router} />;
 }
 

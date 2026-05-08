@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import placeholderImg from "./placeholder.jpg";
+import { apiUrl } from "../../api";
 
 export default function EditProductForm() {
   const { id } = useParams(); // Get the product ID from the URL
@@ -17,15 +18,14 @@ export default function EditProductForm() {
   const [file, setFile] = useState(null); // State to store the selected file
   const [errorMessage, setErrorMessage] = useState(""); // State for error messages
   const [successMessage, setSuccessMessage] = useState(""); // State for success message
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
     // Fetch the product details
     const fetchProduct = async () => {
       try {
-        const response = await axios.get(
-          `http://localhost:3080/getproducts/${id}`
-        );
+        const response = await axios.get(apiUrl(`/getproducts/${id}`));
         setProduct(response.data);
         setFormData({
           NAME: response.data.NAME,
@@ -38,6 +38,8 @@ export default function EditProductForm() {
       } catch (error) {
         console.error("Error fetching product:", error);
         setErrorMessage("Failed to load product details.");
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -64,7 +66,7 @@ export default function EditProductForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.put(`http://localhost:3080/updateProducts/${id}`, formData);
+      await axios.put(apiUrl(`/updateProducts/${id}`), formData);
       setSuccessMessage("Product updated successfully!");
       setErrorMessage(""); // Clear any previous error messages
       navigate(`/edit_product`); // Redirect to the updated product page or a success page
@@ -75,7 +77,8 @@ export default function EditProductForm() {
     }
   };
 
-  if (!product) return <p>Loading...</p>;
+  if (loading) return <p>Loading...</p>;
+  if (!product) return <p className="text-center text-red-500">Product not found.</p>;
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -92,13 +95,7 @@ export default function EditProductForm() {
           </div>
         )}
         <img
-          src={
-            formData.PICTURE
-              ? formData.PICTURE
-              : product.PICTURE
-              ? `data:image/jpeg;base64,${product.PICTURE}`
-              : placeholderImg
-          }
+          src={formData.PICTURE || product.PICTURE || placeholderImg}
           alt={formData.NAME || product.NAME}
           className="w-full h-48 object-cover rounded mb-4"
         />

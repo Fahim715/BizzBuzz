@@ -1,108 +1,113 @@
-const db = require('../db'); 
+const bcrypt = require('bcrypt');
+const pool = require('../db'); 
 
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const getAllUsers = (req, res) => {
-  const query = 'SELECT * FROM USER';
-
-  db.query(query, (err, results) => {
-    if (err) {
-      console.error('Error fetching users:', err);
-      res.status(500).json('Error fetching users from the database.');
-    } else {
-      res.json(results);
-    }
-  });
+const getAllUsers = async (req, res) => {
+  try {
+    const [results] = await pool.promise().query('SELECT * FROM USER');
+    res.json(results);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json('Error fetching users from the database.');
+  }
 };
 
-
-const signUpUser = (req, res) => {
+const signUpUser = async (req, res) => {
   const { email, password, name, phone_no, address, user_type } = req.body;
 
-  const query = 'INSERT INTO USER (EMAIL, PASSWORD, NAME, PHONE_NO, ADDRESS, USER_TYPE) VALUES (?, ?, ?, ?, ?, ?)';
-  const values = [email, password, name, phone_no, address, user_type];
+  if (!email || !password || !name || !user_type) {
+    return res.status(400).json({ message: 'Email, password, name, and user type are required.' });
+  }
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ message: 'Invalid email format.' });
+  }
+  if (password.length < 8) {
+    return res.status(400).json({ message: 'Password must be at least 8 characters.' });
+  }
 
-  db.query(query, values, (err, results) => {
-    if (err) {
-      console.error('Error creating new user:', err);
-      res.status(500).json('Error creating new user.');
-    } else {
-      res.status(201).json('User created successfully!');
-    }
-  });
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const query = 'INSERT INTO USER (EMAIL, PASSWORD, NAME, PHONE_NO, ADDRESS, USER_TYPE) VALUES (?, ?, ?, ?, ?, ?)';
+    const values = [email, hashedPassword, name, phone_no || null, address || null, user_type];
+    await pool.promise().query(query, values);
+    res.status(201).json({ message: 'User created successfully!' });
+  } catch (error) {
+    console.error('Error creating new user:', error);
+    res.status(500).json('Error creating new user.');
+  }
 };
 
-
-const signInUser = (req, res) => {
+const signInUser = async (req, res) => {
   const { email, password } = req.body;
 
-  const query = 'SELECT * FROM USER WHERE EMAIL = ? AND PASSWORD = ?';
-  const values = [email, password];
+  if (!email || !password) {
+    return res.status(400).json({ message: 'Email and password are required.' });
+  }
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ message: 'Invalid email format.' });
+  }
 
-  db.query(query, values, (err, results) => {
-    if (err) {
-      console.error('Error signing in:', err);
-      res.status(500).json('Error signing in.');
-    } else {
-      if (results.length > 0) {
-        res.status(200).json({ message: 'Sign-in successful!', user: results[0] });
-      } else {
-        res.status(401).json('Invalid email or password.');
-      }
+  try {
+    const [results] = await pool.promise().query('SELECT * FROM USER WHERE EMAIL = ?', [email]);
+    if (results.length === 0) {
+      return res.status(401).json({ message: 'Invalid email or password.' });
     }
-  });
+
+    const user = results[0];
+    const match = await bcrypt.compare(password, user.PASSWORD);
+    if (!match) {
+      return res.status(401).json({ message: 'Invalid email or password.' });
+    }
+
+    res.status(200).json({ message: 'Sign-in successful!', user });
+  } catch (error) {
+    console.error('Error signing in:', error);
+    res.status(500).json('Error signing in.');
+  }
 };
 
-
-const getUserProfile = (req, res) => {
+const getUserProfile = async (req, res) => {
   const userId = req.params.id; 
 
-  const query = 'SELECT * FROM USER WHERE USER_ID = ?';
-  db.query(query, [userId], (err, results) => {
-    if (err) {
-      console.error('Error fetching user profile:', err);
-      res.status(500).json('Error fetching user profile.');
+  try {
+    const [results] = await pool.promise().query('SELECT * FROM USER WHERE USER_ID = ?', [userId]);
+    if (results.length > 0) {
+      res.status(200).json(results[0]);
     } else {
-      if (results.length > 0) {
-        res.status(200).json(results[0]);
-      } else {
-        res.status(404).json('User not found.');
-      }
+      res.status(404).json('User not found.');
     }
-  });
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    res.status(500).json('Error fetching user profile.');
+  }
 };
 
-
-const updateUserProfile = (req, res) => {
+const updateUserProfile = async (req, res) => {
   const userId = req.params.id; 
   const { EMAIL, PASSWORD, NAME, PHONE_NO, ADDRESS, USER_TYPE } = req.body;
-  console.log(req.body)
-  const query = 'UPDATE USER SET EMAIL = ?, PASSWORD = ?, NAME = ?, PHONE_NO = ?, ADDRESS = ?, USER_TYPE = ? WHERE USER_ID = ?';
-  const values = [EMAIL, PASSWORD, NAME, PHONE_NO, ADDRESS, USER_TYPE, userId];
 
-  db.query(query, values, (err, results) => {
-    if (err) {
-      console.error('Error updating user profile:', err);
-      res.status(500).json('Error updating user profile.');
-    } else {
-      res.status(200).json('User profile updated successfully!');
-    }
-  });
+  try {
+    const query = 'UPDATE USER SET EMAIL = ?, PASSWORD = ?, NAME = ?, PHONE_NO = ?, ADDRESS = ?, USER_TYPE = ? WHERE USER_ID = ?';
+    const values = [EMAIL, PASSWORD, NAME, PHONE_NO, ADDRESS, USER_TYPE, userId];
+    await pool.promise().query(query, values);
+    res.status(200).json('User profile updated successfully!');
+  } catch (error) {
+    console.error('Error updating user profile:', error);
+    res.status(500).json('Error updating user profile.');
+  }
 };
 
-
-const deleteUserProfile = (req, res) => {
+const deleteUserProfile = async (req, res) => {
   const userId = req.params.id; 
 
-  const query = 'DELETE FROM USER WHERE USER_ID = ?';
-  db.query(query, [userId], (err, results) => {
-    if (err) {
-      console.error('Error deleting user profile:', err);
-      res.status(500).json('Error deleting user profile.');
-    } else {
-      
-      res.status(200).json('User profile deleted successfully!');
-    }
-  });
+  try {
+    await pool.promise().query('DELETE FROM USER WHERE USER_ID = ?', [userId]);
+    res.status(200).json('User profile deleted successfully!');
+  } catch (error) {
+    console.error('Error deleting user profile:', error);
+    res.status(500).json('Error deleting user profile.');
+  }
 };
 
 module.exports = {

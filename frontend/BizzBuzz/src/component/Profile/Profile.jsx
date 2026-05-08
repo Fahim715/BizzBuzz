@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { apiUrl } from "../../api";
 export default function Profile() {
   const userId = localStorage.getItem("userId");
   const [profile, setProfile] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const { removeAuth, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   useEffect(() => {
@@ -16,16 +19,18 @@ export default function Profile() {
 
   const fetchUserProfile = async () => {
     try {
-      const response = await fetch(`http://localhost:3080/users/${userId}`);
+      const response = await fetch(apiUrl(`/users/${userId}`));
       if (response.ok) {
         const data = await response.json();
         setProfile(data);
       } else {
-        setMessage("Failed to fetch profile.");
+        setError("Failed to fetch profile.");
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
-      setMessage("An error occurred while fetching the profile.");
+      setError("An error occurred while fetching the profile.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -39,7 +44,7 @@ export default function Profile() {
     try {
       console.log(profile);
       const response = await fetch(
-        `http://localhost:3080/usersUpdate/${userId}`,
+        apiUrl(`/usersUpdate/${userId}`),
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -65,7 +70,7 @@ export default function Profile() {
       )
     ) {
       try {
-        const response = await fetch(`http://localhost:3080/users/${userId}`, {
+        const response = await fetch(apiUrl(`/users/${userId}`), {
           method: "DELETE",
         });
         if (response.ok) {
@@ -83,6 +88,14 @@ export default function Profile() {
       }
     }
   };
+
+  if (loading) {
+    return <div className="text-center mt-8">Loading profile...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center mt-8 text-red-500">{error}</div>;
+  }
 
   if (!profile) {
     return <div className="text-center mt-8">Loading profile...</div>;

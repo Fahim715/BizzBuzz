@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { apiUrl } from "../../api";
 
 export default function Cart() {
   const [cartProducts, setCartProducts] = useState([]);
   const [cart, setCart] = useState([]);
   const [totalCost, setTotalCost] = useState(0);
-  const [checkoutStatus, setCheckoutStatus] = useState(null); // For displaying success or error
+  const [checkoutStatus, setCheckoutStatus] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
   const userId = localStorage.getItem("userId");
 
@@ -15,22 +18,31 @@ export default function Cart() {
     setCart(storedCart);
 
     const fetchCartProducts = async () => {
-      const fetchedProducts = await Promise.all(
-        storedCart.map(async (item) => {
-          const response = await fetch(
-            `http://localhost:3080/getproducts/${item.productId}`
-          );
-          const data = await response.json();
-          return { ...data, quantity: item.quantity }; // Include quantity from localStorage
-        })
-      );
-      setCartProducts(fetchedProducts);
-
-      calculateTotalCost(fetchedProducts);
+      setLoading(true);
+      setError(null);
+      try {
+        const fetchedProducts = await Promise.all(
+          storedCart.map(async (item) => {
+            const response = await fetch(
+              apiUrl(`/getproducts/${item.productId}`)
+            );
+            const data = await response.json();
+            return { ...data, quantity: item.quantity };
+          })
+        );
+        setCartProducts(fetchedProducts);
+        calculateTotalCost(fetchedProducts);
+      } catch (err) {
+        setError("Failed to load cart items. Please try again.");
+      } finally {
+        setLoading(false);
+      }
     };
 
     if (storedCart.length > 0) {
       fetchCartProducts();
+    } else {
+      setLoading(false);
     }
   }, []);
 
@@ -102,7 +114,7 @@ export default function Cart() {
   // Handle checkout process
   const handleCheckout = async () => {
     try {
-      const response = await fetch("http://localhost:3080/checkout", {
+      const response = await fetch(apiUrl("/checkout"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -138,6 +150,14 @@ export default function Cart() {
       });
     }
   };
+
+  if (loading) {
+    return <div className="text-center p-8">Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center p-8 text-red-500">{error}</div>;
+  }
 
   return (
     <div className="bg-gray-100 min-h-screen p-6">

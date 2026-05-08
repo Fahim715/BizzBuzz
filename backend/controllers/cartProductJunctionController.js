@@ -1,16 +1,13 @@
-const db = require('../db');
+const pool = require('../db');
 
-const getAllCartProducts = (req, res) => {
-  const query = 'SELECT * FROM CART_PRODUCT_JUNCTION';
-  
-  db.query(query, (err, results) => {
-    if (err) {
-      console.error('Error fetching cart products:', err);
-      res.status(500).json('Error fetching cart products from the database.');
-    } else {
-      res.json(results);
-    }
-  });
+const getAllCartProducts = async (req, res) => {
+  try {
+    const [results] = await pool.promise().query('SELECT * FROM CART_PRODUCT_JUNCTION');
+    res.json(results);
+  } catch (error) {
+    console.error('Error fetching cart products:', error);
+    res.status(500).json('Error fetching cart products from the database.');
+  }
 };
 
 module.exports = {

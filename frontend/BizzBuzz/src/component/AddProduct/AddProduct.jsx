@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { apiUrl } from "../../api";
 
 export default function AddProduct() {
   const userId = localStorage.getItem("userId");
@@ -67,7 +68,7 @@ export default function AddProduct() {
     }
     setError(""); // Clear previous errors
     try {
-      const response = await fetch("http://localhost:3080/insertProducts", {
+      const response = await fetch(apiUrl("/insertProducts"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

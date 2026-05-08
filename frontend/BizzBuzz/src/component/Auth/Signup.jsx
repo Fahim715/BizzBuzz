@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useEffect } from "react";
+import { apiUrl } from "../../api";
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -33,7 +34,7 @@ const Signup = () => {
     setError("");
     setSuccess("");
     try {
-      const response = await fetch("http://localhost:3080/signup", {
+      const response = await fetch(apiUrl("/signup"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
